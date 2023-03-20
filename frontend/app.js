@@ -1,3 +1,5 @@
+fetch("http://localhost:5000", { method: "OPTIONS" });
+
 document.addEventListener("DOMContentLoaded", () => {
     const gameTable = document.getElementById("game-table");
     createGameBoard(gameTable);
@@ -32,7 +34,9 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    function handleClick(e) {
+    async function handleClick(e) {
+        if (currentPlayer === 1) return; // Disable player interaction during the computer's turn.
+
         const row = parseInt(e.target.dataset.row);
         const col = parseInt(e.target.dataset.col);
         const newRow = dropPiece(row, col);
@@ -51,9 +55,42 @@ document.addEventListener("DOMContentLoaded", () => {
             } else {
                 currentPlayer = 1 - currentPlayer;
                 updateUI();
+                const computerMove = await getComputerMove(gameBoard);
+                const computerRow = dropPiece(0, computerMove);
+                gameBoard[computerRow][computerMove] = currentPlayer;
+                const computerCell = gameTable.rows[computerRow].cells[computerMove].firstChild;
+                computerCell.classList.add(playerClasses[currentPlayer]);
+                if (checkWin(computerRow, computerMove)) {
+                    scores[currentPlayer]++;
+                    updateUI();
+                    setTimeout(() => {
+                        alert(`Player ${currentPlayer + 1} wins!`);
+                        resetGame();
+                    }, 10);
+                } else {
+                    currentPlayer = 1 - currentPlayer;
+                    updateUI();
+                }
             }
         }
     }
+
+
+    async function getComputerMove(gameBoard) {
+        const convertedBoard = gameBoard.map(row => row.map(cell => cell === null ? 0 : cell + 1));
+
+        const response = await fetch("http://localhost:5000/api/make-move", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ board: convertedBoard }),
+        });
+
+        const data = await response.json();
+        return data.column;
+    }
+
 
     function updateUIState(e, newRow, col) {
         e.target.parentNode.parentNode.parentNode.rows[newRow].cells[col].firstChild.classList.add(playerClasses[currentPlayer]);
