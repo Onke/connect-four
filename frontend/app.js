@@ -35,8 +35,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     async function handleClick(e) {
-        if (currentPlayer === 1) return; // Disable player interaction during the computer's turn.
-
         const row = parseInt(e.target.dataset.row);
         const col = parseInt(e.target.dataset.col);
         const newRow = dropPiece(row, col);
@@ -45,36 +43,52 @@ document.addEventListener("DOMContentLoaded", () => {
             updateUIState(e, newRow, col);
             gameBoard[newRow][col] = currentPlayer;
 
+            // Wait for the animation to complete before checking the win and switching turns
+            await new Promise((resolve) => setTimeout(resolve, 800));
+
             if (checkWin(newRow, col)) {
                 scores[currentPlayer]++;
                 updateUI();
                 setTimeout(() => {
                     alert(`Player ${currentPlayer + 1} wins!`);
-                    resetGame();
-                }, 10);
+                    clearBoard();
+                }, 9000);
             } else {
-                currentPlayer = 1 - currentPlayer;
-                updateUI();
-                const computerMove = await getComputerMove(gameBoard);
-                const computerRow = dropPiece(0, computerMove);
-                gameBoard[computerRow][computerMove] = currentPlayer;
-                const computerCell = gameTable.rows[computerRow].cells[computerMove].firstChild;
-                computerCell.classList.add(playerClasses[currentPlayer]);
-                if (checkWin(computerRow, computerMove)) {
-                    scores[currentPlayer]++;
+                if (currentPlayer === 0) {
+                    currentPlayer = 1;
                     updateUI();
-                    setTimeout(() => {
-                        alert(`Player ${currentPlayer + 1} wins!`);
-                        resetGame();
-                    }, 10);
-                } else {
-                    currentPlayer = 1 - currentPlayer;
-                    updateUI();
+                    const computerTurnOverlay = document.getElementById("computer-turn-overlay");
+                    computerTurnOverlay.classList.remove("hidden");
+
+                    setTimeout(async () => {
+                        const computerCol = await getComputerMove(gameBoard);
+                        const computerNewRow = dropPiece(0, computerCol);
+
+                        if (computerNewRow >= 0) {
+                            updateUIState(e, computerNewRow, computerCol);
+                            gameBoard[computerNewRow][computerCol] = currentPlayer;
+
+                            // Wait for the animation to complete before checking the win and switching turns
+                            await new Promise((resolve) => setTimeout(resolve, 800));
+
+                            if (checkWin(computerNewRow, computerCol)) {
+                                scores[currentPlayer]++;
+                                updateUI();
+                                setTimeout(() => {
+                                    alert(`Player ${currentPlayer + 1} wins!`);
+                                    clearBoard();
+                                }, 10);
+                            }
+                        }
+
+                        currentPlayer = 0;
+                        updateUI();
+                        computerTurnOverlay.classList.add("hidden");
+                    }, 3000); // 3 second delay between turns
                 }
             }
         }
     }
-
 
     async function getComputerMove(gameBoard) {
         const convertedBoard = gameBoard.map(row => row.map(cell => cell === null ? 0 : cell + 1));
@@ -91,15 +105,20 @@ document.addEventListener("DOMContentLoaded", () => {
         return data.column;
     }
 
-
     function updateUIState(e, newRow, col) {
-        e.target.parentNode.parentNode.parentNode.rows[newRow].cells[col].firstChild.classList.add(playerClasses[currentPlayer]);
-        updateUI();
+        const targetCell = e.target.parentNode.parentNode.parentNode.rows[newRow].cells[col].firstChild;
+        const initialTop = targetCell.style.top;
+        targetCell.style.top = "-300px";
+        targetCell.classList.add(playerClasses[currentPlayer]);
+
+        setTimeout(() => {
+            targetCell.style.top = initialTop;
+        }, 300);
     }
 
     function updateUI() {
-        const currentPlayerIndicator = document.getElementById("current-player");
-        currentPlayerIndicator.innerText = currentPlayer + 1;
+        // const currentPlayerIndicator = document.getElementById("current-player");
+        // currentPlayerIndicator.innerText = currentPlayer + 1;
 
         const player1ScoreElement = document.getElementById("player1-score");
         const player2ScoreElement = document.getElementById("player2-score");
@@ -150,7 +169,7 @@ document.addEventListener("DOMContentLoaded", () => {
         } return count;
     }
 
-    function resetGame() {
+    function clearBoard() {
         gameBoard = [...Array(6)].map(() => Array(7).fill(null));
 
         cells.forEach((cell) => {
@@ -160,4 +179,10 @@ document.addEventListener("DOMContentLoaded", () => {
         currentPlayer = 0;
         updateUI();
     }
+
+    function resetGame() {
+        clearBoard();
+        scores = [0, 0];
+    }
+
 });

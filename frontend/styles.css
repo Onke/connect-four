@@ -18,6 +18,8 @@ h1 {
     display: inline-block;
     border: 2px solid #000;
     background-color: #0074d9;
+    border-radius: 20px;
+    background-image: linear-gradient(120deg, #0074d9, #7fdbff);
 }
 
 table {
@@ -35,13 +37,59 @@ td {
     border-radius: 50%;
     margin: 5px;
     cursor: pointer;
+    position: relative;
+    transform: translateY(0);
+    transition: transform 0.2s ease-out;
+    box-shadow: 0px 5px 10px rgba(0, 0, 0, 0.3);
 }
 
-.player1,
-.player2 {
+.cell:hover {
+    transform: scale(1.1);
+}
+
+.player1 {
     background-color: #ff4136;
 }
 
 .player2 {
     background-color: #2ecc40;
+}
+
+.player1,
+.player2 {
+    position: relative;
+    top: 0;
+    left: 0;
+    transition: top 0.4s;
+}
+
+.game-info {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 30px;
+    justify-content: center;
+    margin-top: 10px;
+}
+
+.overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.overlay-content {
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 5px;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+}
+
+.hidden {
+    display: none;
 }
